@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initHeader();
     initMobileMenu();
     initSmoothScroll();
+    initProjectSliders();
     initGallerySlider();
     initGalleryTabs();
     initAnimations();
@@ -146,7 +147,185 @@ function updateActiveLink(href) {
 }
 
 /* ----------------------------------------
-   GALERIA - Slider
+   SLIDERS DOS PROJETOS (Serenata, Galpão, Vespasiano)
+   ---------------------------------------- */
+function initProjectSliders() {
+    // Configuração dos sliders
+    const sliderConfigs = [
+        { sliderId: 'sliderSerenata', dotsId: 'dotsSerenata' },
+        { sliderId: 'sliderGalpao', dotsId: 'dotsGalpao' },
+        { sliderId: 'sliderVespasiano', dotsId: 'dotsVespasiano' }
+    ];
+
+    sliderConfigs.forEach(function(config) {
+        initSingleProjectSlider(config.sliderId, config.dotsId);
+    });
+}
+
+function initSingleProjectSlider(sliderId, dotsId) {
+    const slider = document.getElementById(sliderId);
+    const dotsContainer = document.getElementById(dotsId);
+
+    if (!slider) return;
+
+    const track = slider.querySelector('.projeto-slider__track');
+    const slides = slider.querySelectorAll('.projeto-slider__slide');
+    const prevBtn = slider.querySelector('.projeto-slider__nav--prev');
+    const nextBtn = slider.querySelector('.projeto-slider__nav--next');
+
+    if (!track || slides.length === 0) return;
+
+    let currentIndex = 0;
+    const totalSlides = slides.length;
+    let autoplayInterval;
+    let isHovering = false;
+
+    // Criar dots
+    function createDots() {
+        if (!dotsContainer) return;
+        dotsContainer.innerHTML = '';
+
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('span');
+            dot.className = 'projeto-slider__dot' + (i === 0 ? ' active' : '');
+            dot.addEventListener('click', function() {
+                goToSlide(i);
+            });
+            dotsContainer.appendChild(dot);
+        }
+    }
+
+    // Atualizar dots
+    function updateDots() {
+        if (!dotsContainer) return;
+        const dots = dotsContainer.querySelectorAll('.projeto-slider__dot');
+        dots.forEach(function(dot, index) {
+            dot.classList.toggle('active', index === currentIndex);
+        });
+    }
+
+    // Ir para slide específico
+    function goToSlide(index) {
+        currentIndex = index;
+        if (currentIndex < 0) currentIndex = totalSlides - 1;
+        if (currentIndex >= totalSlides) currentIndex = 0;
+        updateSlider();
+        updateDots();
+    }
+
+    // Atualizar posição do slider
+    function updateSlider() {
+        const translateX = -currentIndex * 100;
+        track.style.transform = 'translateX(' + translateX + '%)';
+    }
+
+    // Próximo slide
+    function nextSlide() {
+        currentIndex++;
+        if (currentIndex >= totalSlides) currentIndex = 0;
+        updateSlider();
+        updateDots();
+    }
+
+    // Slide anterior
+    function prevSlide() {
+        currentIndex--;
+        if (currentIndex < 0) currentIndex = totalSlides - 1;
+        updateSlider();
+        updateDots();
+    }
+
+    // Autoplay
+    function startAutoplay() {
+        stopAutoplay();
+        if (!isHovering) {
+            autoplayInterval = setInterval(nextSlide, 4000);
+        }
+    }
+
+    function stopAutoplay() {
+        if (autoplayInterval) {
+            clearInterval(autoplayInterval);
+        }
+    }
+
+    // Event Listeners
+    if (prevBtn) {
+        prevBtn.addEventListener('click', function() {
+            prevSlide();
+            stopAutoplay();
+            startAutoplay();
+        });
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', function() {
+            nextSlide();
+            stopAutoplay();
+            startAutoplay();
+        });
+    }
+
+    // Pausar autoplay ao hover
+    slider.addEventListener('mouseenter', function() {
+        isHovering = true;
+        stopAutoplay();
+    });
+
+    slider.addEventListener('mouseleave', function() {
+        isHovering = false;
+        startAutoplay();
+    });
+
+    // Touch events para mobile
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    slider.addEventListener('touchstart', function(e) {
+        touchStartX = e.changedTouches[0].screenX;
+        stopAutoplay();
+    }, { passive: true });
+
+    slider.addEventListener('touchend', function(e) {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+        startAutoplay();
+    }, { passive: true });
+
+    function handleSwipe() {
+        const swipeThreshold = 50;
+        const diff = touchStartX - touchEndX;
+
+        if (Math.abs(diff) > swipeThreshold) {
+            if (diff > 0) {
+                nextSlide();
+            } else {
+                prevSlide();
+            }
+        }
+    }
+
+    // Navegação por teclado quando o slider está em foco
+    slider.setAttribute('tabindex', '0');
+    slider.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowLeft') {
+            prevSlide();
+            stopAutoplay();
+            startAutoplay();
+        } else if (e.key === 'ArrowRight') {
+            nextSlide();
+            stopAutoplay();
+            startAutoplay();
+        }
+    });
+
+    // Inicializar
+    createDots();
+    startAutoplay();
+}
+
+/* ----------------------------------------
+   GALERIA - Slider Principal
    ---------------------------------------- */
 function initGallerySlider() {
     const slider = document.getElementById('galeriaSlider');
@@ -165,6 +344,7 @@ function initGallerySlider() {
 
     // Criar dots
     function createDots() {
+        if (!dotsContainer) return;
         dotsContainer.innerHTML = '';
         const dotsCount = maxIndex + 1;
 
@@ -180,6 +360,7 @@ function initGallerySlider() {
 
     // Atualizar dots
     function updateDots() {
+        if (!dotsContainer) return;
         const dots = dotsContainer.querySelectorAll('.galeria__dot');
         dots.forEach(function(dot, index) {
             dot.classList.toggle('active', index === currentIndex);
@@ -351,7 +532,7 @@ function initGalleryTabs() {
 function initAnimations() {
     // Adicionar classe de animação aos elementos
     const animatedElements = document.querySelectorAll(
-        '.diferencial-card, .servico-card, .area-card, .section-header'
+        '.diferencial-card, .servico-card, .area-card, .section-header, .projeto-destaque, .avaliacao-card, .contato__card'
     );
 
     animatedElements.forEach(function(el, index) {
@@ -485,4 +666,62 @@ function preloadImage(src) {
 // Preload hero background
 document.addEventListener('DOMContentLoaded', function() {
     preloadImage('imagens/galeria/vespasiano-bh/vespasiano-1.jpeg');
+});
+
+/* ----------------------------------------
+   CONTADOR ANIMADO (para estatísticas)
+   ---------------------------------------- */
+function animateCounter(element, target, duration) {
+    let start = 0;
+    const increment = target / (duration / 16);
+
+    function updateCounter() {
+        start += increment;
+        if (start < target) {
+            element.textContent = Math.floor(start);
+            requestAnimationFrame(updateCounter);
+        } else {
+            element.textContent = target;
+        }
+    }
+
+    updateCounter();
+}
+
+// Iniciar contadores quando visíveis
+document.addEventListener('DOMContentLoaded', function() {
+    const statNumbers = document.querySelectorAll('.hero__stat-number');
+
+    const counterObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                const el = entry.target;
+                const text = el.textContent;
+                const number = parseInt(text.replace(/\D/g, ''));
+                const suffix = text.replace(/[0-9]/g, '');
+
+                if (!isNaN(number) && !el.classList.contains('counted')) {
+                    el.classList.add('counted');
+                    let count = 0;
+                    const increment = number / 50;
+
+                    const timer = setInterval(function() {
+                        count += increment;
+                        if (count >= number) {
+                            el.textContent = number + suffix;
+                            clearInterval(timer);
+                        } else {
+                            el.textContent = Math.floor(count) + suffix;
+                        }
+                    }, 30);
+                }
+
+                counterObserver.unobserve(el);
+            }
+        });
+    }, { threshold: 0.5 });
+
+    statNumbers.forEach(function(stat) {
+        counterObserver.observe(stat);
+    });
 });
