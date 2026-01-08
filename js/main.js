@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initGalleryTabs();
     initAnimations();
     initCurrentYear();
+    initLightbox();
 });
 
 /* ----------------------------------------
@@ -725,3 +726,140 @@ document.addEventListener('DOMContentLoaded', function() {
         counterObserver.observe(stat);
     });
 });
+
+/* ----------------------------------------
+   LIGHTBOX - Visualizador de Imagens
+   ---------------------------------------- */
+function initLightbox() {
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImage = document.getElementById('lightboxImage');
+    const lightboxClose = document.getElementById('lightboxClose');
+    const lightboxPrev = document.getElementById('lightboxPrev');
+    const lightboxNext = document.getElementById('lightboxNext');
+    const lightboxCounter = document.getElementById('lightboxCounter');
+
+    if (!lightbox) return;
+
+    let currentImages = [];
+    let currentIndex = 0;
+
+    // Coletar todas as imagens clicáveis dos sliders de projeto
+    function collectImages(slider) {
+        const images = slider.querySelectorAll('.projeto-slider__slide img');
+        return Array.from(images).map(function(img) {
+            return {
+                src: img.src,
+                alt: img.alt
+            };
+        });
+    }
+
+    // Abrir lightbox
+    function openLightbox(images, index) {
+        currentImages = images;
+        currentIndex = index;
+        updateLightboxImage();
+        lightbox.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    // Fechar lightbox
+    function closeLightbox() {
+        lightbox.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // Atualizar imagem
+    function updateLightboxImage() {
+        if (currentImages.length === 0) return;
+
+        lightboxImage.src = currentImages[currentIndex].src;
+        lightboxImage.alt = currentImages[currentIndex].alt;
+        lightboxCounter.textContent = (currentIndex + 1) + ' / ' + currentImages.length;
+    }
+
+    // Próxima imagem
+    function nextImage() {
+        currentIndex = (currentIndex + 1) % currentImages.length;
+        updateLightboxImage();
+    }
+
+    // Imagem anterior
+    function prevImage() {
+        currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length;
+        updateLightboxImage();
+    }
+
+    // Adicionar eventos de clique nas imagens dos sliders
+    const projectSliders = document.querySelectorAll('.projeto-slider');
+    projectSliders.forEach(function(slider) {
+        const slides = slider.querySelectorAll('.projeto-slider__slide');
+
+        slides.forEach(function(slide, index) {
+            slide.addEventListener('click', function(e) {
+                // Não abrir se clicou no botão de navegação
+                if (e.target.closest('.projeto-slider__nav')) return;
+
+                const images = collectImages(slider);
+                openLightbox(images, index);
+            });
+        });
+    });
+
+    // Fechar lightbox
+    lightboxClose.addEventListener('click', closeLightbox);
+
+    // Navegação
+    lightboxNext.addEventListener('click', nextImage);
+    lightboxPrev.addEventListener('click', prevImage);
+
+    // Fechar ao clicar fora da imagem
+    lightbox.addEventListener('click', function(e) {
+        if (e.target === lightbox || e.target.classList.contains('lightbox__content')) {
+            closeLightbox();
+        }
+    });
+
+    // Navegação por teclado
+    document.addEventListener('keydown', function(e) {
+        if (!lightbox.classList.contains('active')) return;
+
+        switch(e.key) {
+            case 'Escape':
+                closeLightbox();
+                break;
+            case 'ArrowRight':
+                nextImage();
+                break;
+            case 'ArrowLeft':
+                prevImage();
+                break;
+        }
+    });
+
+    // Swipe em dispositivos touch
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    lightbox.addEventListener('touchstart', function(e) {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    lightbox.addEventListener('touchend', function(e) {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+    }, { passive: true });
+
+    function handleSwipe() {
+        const swipeThreshold = 50;
+        const diff = touchStartX - touchEndX;
+
+        if (Math.abs(diff) > swipeThreshold) {
+            if (diff > 0) {
+                nextImage();
+            } else {
+                prevImage();
+            }
+        }
+    }
+}
