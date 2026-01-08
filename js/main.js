@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initAnimations();
     initCurrentYear();
     initLightbox();
+    initFAQ();
 });
 
 /* ----------------------------------------
@@ -862,4 +863,33 @@ function initLightbox() {
             }
         }
     }
+}
+
+/* ----------------------------------------
+   FAQ - Accordion
+   ---------------------------------------- */
+function initFAQ() {
+    const faqItems = document.querySelectorAll('.faq__item');
+
+    if (!faqItems.length) return;
+
+    faqItems.forEach(function(item) {
+        const question = item.querySelector('.faq__question');
+
+        question.addEventListener('click', function() {
+            const isActive = item.classList.contains('active');
+
+            // Fechar todos os outros
+            faqItems.forEach(function(otherItem) {
+                otherItem.classList.remove('active');
+                otherItem.querySelector('.faq__question').setAttribute('aria-expanded', 'false');
+            });
+
+            // Abrir/fechar o clicado
+            if (!isActive) {
+                item.classList.add('active');
+                question.setAttribute('aria-expanded', 'true');
+            }
+        });
+    });
 }
